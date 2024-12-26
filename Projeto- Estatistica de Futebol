@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Futebol - Série A</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #282c34;
+            color: white;
+        }
+        header, footer {
+            background-color: #20232a;
+            padding: 10px 0;
+            text-align: center;
+        }
+        header h1 {
+            color: #61dafb;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #20232a;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .container section {
+            margin-bottom: 30px;
+        }
+        button, input[type="submit"] {
+            background-color: #61dafb;
+            color: #20232a;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1.2em;
+            cursor: pointer;
+            border-radius: 5px;
+            margin: 10px;
+        }
+        button:hover, input[type="submit"]:hover {
+            background-color: #21a1f1;
+        }
+        .hidden {
+            display: none;
+        }
+        .login-box {
+            max-width: 400px;
+            margin: 100px auto;
+            padding: 20px;
+            background-color: #3a3f47;
+            border-radius: 10px;
+        }
+        .login-box h2 {
+            margin-bottom: 20px;
+            color: #61dafb;
+        }
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+        }
+        #ranking-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        #ranking-table th, #ranking-table td {
+            padding: 10px;
+            text-align: center;
+            border-bottom: 1px solid #ddd;
+        }
+        #ranking-table th {
+            background-color: #61dafb;
+            color: #20232a;
+        }
+        .chart-container {
+            width: 100%;
+            height: 400px;
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .match-results {
+            margin-top: 20px;
+        }
+        .match {
+            margin: 20px 0;
+            border: 1px solid #61dafb;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: rgba(97, 218, 251, 0.1);
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Estatísticas da Série A - Futebol Brasileiro</h1>
+    </header>
+
+    <!-- Login Form -->
+    <div class="login-box" id="login-form">
+        <h2>Login</h2>
+        <form onsubmit="return login()">
+            <input type="text" id="username" placeholder="Usuário" required>
+            <input type="password" id="password" placeholder="Senha" required>
+            <input type="submit" value="Entrar">
+        </form>
+    </div>
+
+    <div class="container hidden" id="app-container">
+        <!-- Menu -->
+        <section id="menu">
+            <button onclick="showSection('classification')">Classificação</button>
+            <button onclick="showSection('simulator')">Simulador de Jogos</button>
+            <button onclick="showSection('player-stats')">Estatísticas de Jogadores</button>
+            <button onclick="showSection('team-stats')">Estatísticas de Times</button>
+        </section>
+
+        <!-- Classificação -->
+        <section class="hidden" id="classification">
+            <h2>Tabela de Classificação</h2>
+            <table id="ranking-table">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Pontos</th>
+                        <th>Vitórias</th>
+                        <th>Empates</th>
+                        <th>Derrotas</th>
+                        <th>Gols Pró</th>
+                        <th>Gols Contra</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+            <button onclick="goBack()">Voltar</button>
+        </section>
+
+        <!-- Simulador de Jogos -->
+        <section class="hidden" id="simulator">
+            <h2>Simulador de Jogos</h2>
+            <button onclick="simulateRound()">Simular Rodada</button>
+            <div id="match-results" class="match-results"></div>
+            <button onclick="goBack()">Voltar</button>
+        </section>
+
+        <!-- Estatísticas de Jogadores -->
+        <section class="hidden" id="player-stats">
+            <h2>Estatísticas de Jogadores</h2>
+            <div class="chart-container">
+                <canvas id="playerChart"></canvas>
+            </div>
+            <button onclick="goBack()">Voltar</button>
+        </section>
+
+        <!-- Estatísticas de Times -->
+        <section class="hidden" id="team-stats">
+            <h2>Estatísticas de Times</h2>
+            <div class="chart-container">
+                <canvas id="teamChart"></canvas>
+            </div>
+            <button onclick="goBack()">Voltar</button>
+        </section>
+    </div>
+
+    <footer>
+        <p>&copy; 2024 Sistema de Estatísticas da Série A</p>
+    </footer>
+
+    <script>
+        // Simulação de login
+        const validUsername = "admin";
+        const validPasswordHash = btoa("admin123");
+
+        function login() {
+            const username = document.getElementById("username").value;
+            const password = document.getElementById("password").value;
+
+            if (username === validUsername && btoa(password) === validPasswordHash) {
+                document.getElementById("login-form").style.display = "none";
+                document.getElementById("app-container").classList.remove('hidden');
+                return false;
+            } else {
+                alert("Usuário ou senha incorretos!");
+                return false;
+            }
+        }
+
+        // Simulador de Jogos
+        const teams = [
+            { name: "Atlético Mineiro", points: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 },
+            { name: "Botafogo", points: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 },
+            { name: "Corinthians", points: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 },
+            { name: "Cruzeiro", points: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 },
+            { name: "Flamengo", points: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 },
+            { name: "Fluminense", points: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 },
+            { name: "Grêmio", points: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 },
+            { name: "Internacional", points: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 },
+            { name: "Palmeiras", points: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 },
+            { name: "Santos", points: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 },
+            { name: "São Paulo", points: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 },
+            { name: "Athletico Paranaense", points: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 },
+            { name: "Bahia", points: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 },
+            { name: "Ceará", points: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 },
+            { name: "Fortaleza", points: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 },
+            { name: "Vasco da Gama", points: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 }
+        ];
+
+        function simulateRound() {
+            let matchResults = "";
+            for (let i = 0; i < teams.length; i += 2) {
+                const homeTeam = teams[i];
+                const awayTeam = teams[i + 1];
+                const homeGoals = Math.floor(Math.random() * 5);
+                const awayGoals = Math.floor(Math.random() * 5);
+                matchResults += `<div class="match"><strong>${homeTeam.name} ${homeGoals} - ${awayGoals} ${awayTeam.name}</strong></div>`;
+
+                // Atualiza a classificação
+                if (homeGoals > awayGoals) {
+                    homeTeam.points += 3;
+                    homeTeam.wins += 1;
+                    awayTeam.losses += 1;
+                } else if (homeGoals < awayGoals) {
+                    awayTeam.points += 3;
+                    awayTeam.wins += 1;
+                    homeTeam.losses += 1;
+                } else {
+                    homeTeam.points += 1;
+                    awayTeam.points += 1;
+                    homeTeam.draws += 1;
+                    awayTeam.draws += 1;
+                }
+
+                homeTeam.goalsFor += homeGoals;
+                homeTeam.goalsAgainst += awayGoals;
+                awayTeam.goalsFor += awayGoals;
+                awayTeam.goalsAgainst += homeGoals;
+            }
+
+            document.getElementById("match-results").innerHTML = matchResults;
+            updateRankingTable();
+        }
+
+        function updateRankingTable() {
+            const tbody = document.querySelector("#ranking-table tbody");
+            tbody.innerHTML = "";
+            teams.sort((a, b) => b.points - a.points);
+            teams.forEach(team => {
+                const row = `<tr>
+                    <td>${team.name}</td>
+                    <td>${team.points}</td>
+                    <td>${team.wins}</td>
+                    <td>${team.draws}</td>
+                    <td>${team.losses}</td>
+                    <td>${team.goalsFor}</td>
+                    <td>${team.goalsAgainst}</td>
+                </tr>`;
+                tbody.innerHTML += row;
+            });
+        }
+
+        function showSection(sectionId) {
+            const sections = document.querySelectorAll('.container > section');
+            sections.forEach(section => section.classList.add('hidden'));
+            document.getElementById(sectionId).classList.remove('hidden');
+        }
+
+        function goBack() {
+            showSection('menu');
+        }
+
+        // Gráficos
+        function renderPlayerChart() {
+            const ctx = document.getElementById('playerChart').getContext('2d');
+            const playerChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Jogador 1', 'Jogador 2', 'Jogador 3'],
+                    datasets: [{
+                        label: 'Gols',
+                        data: [12, 15, 8],
+                        backgroundColor: 'rgba(97, 218, 251, 0.6)',
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderTeamChart() {
+            const ctx = document.getElementById('teamChart').getContext('2d');
+            const teamChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: teams.map(team => team.name),
+                    datasets: [{
+                        label: 'Pontos',
+                        data: teams.map(team => team.points),
+                        backgroundColor: 'rgba(97, 218, 251, 0.6)',
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        // Chamadas iniciais
+        renderPlayerChart();
+        renderTeamChart();
+    </script>
+</body>
+</html>
